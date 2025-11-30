@@ -1,0 +1,95 @@
+# Use NVIDIA CUDA devel image
+FROM docker.1ms.run/nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PATH="/root/miniconda3/bin:${PATH}"
+ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.9+PTX"
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=all
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    wget \
+    unzip \
+    ffmpeg \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Miniconda
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh \
+    && mkdir /root/.conda \
+    && bash miniconda.sh -b -p /root/miniconda3 \
+    && rm miniconda.sh \
+    && conda init bash
+
+WORKDIR /app/core
+
+# Copy environment file first to leverage Docker cache
+COPY src/core/environment.yml .
+
+# Create Conda environment
+RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r && \
+	conda env create -f environment.yml && \
+	conda clean -afy
+
+# 设置 PATH，自动激活环境
+ENV PATH="/root/miniconda3/envs/GtsTalkNeRF/bin:${PATH}"
+
+# Install additional pip dependencies
+RUN pip install chumpy==0.70 lpips sounddevice==0.4.7 dearpygui albumentations==1.3.1 face-alignment insightface==0.7.2 mediapipe==0.10.10 --no-deps --no-cache-dir
+
+# Build Extensions
+# Copy and install extensions individually to leverage Docker cache
+
+# StyleGAN2 Ops
+COPY src/core/styleunet/networks/stylegan2_ops /app/core/styleunet/networks/stylegan2_ops
+WORKDIR /app/core/styleunet/networks/stylegan2_ops
+RUN python setup.py install
+
+# FreqEncoder
+COPY src/core/freqencoder /app/core/freqencoder
+WORKDIR /app/core/freqencoder
+RUN pip install .
+
+# GridEncoder
+COPY src/core/gridencoder /app/core/gridencoder
+WORKDIR /app/core/gridencoder
+RUN pip install .
+
+# GSEncoder
+COPY src/core/gsencoder /app/core/gsencoder
+# Get GLM
+RUN wget https://github.com/g-truc/glm/releases/download/1.0.1/glm-1.0.1-light.zip \
+    && unzip -o glm-1.0.1-light.zip -d /app/core/gsencoder/glm \
+    && rm glm-1.0.1-light.zip
+WORKDIR /app/core/gsencoder
+RUN pip install .
+
+# Raymarching
+COPY src/core/raymarching /app/core/raymarching
+WORKDIR /app/core/raymarching
+RUN pip install .
+
+# Shencoder
+COPY src/core/shencoder /app/core/shencoder
+WORKDIR /app/core/shencoder
+RUN pip install .
+
+COPY src/core /app/core
+
+WORKDIR /app
+
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["entrypoint.sh"]
+
+RUN echo "conda activate GtsTalkNeRF" >> ~/.bashrc
+
+CMD ["sleep", "infinity"]

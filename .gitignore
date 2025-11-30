@@ -7,8 +7,9 @@ build/
 dist/
 *.egg-info/
 
-SyncTalk/SyncTalk/
-
 GPT-SoVITS/
 
-test_data/
+results/
+
+data/*
+!data/**/.gitkeep

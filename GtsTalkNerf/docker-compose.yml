@@ -1,0 +1,13 @@
+services:
+  gtstalknerf:
+    image: localhost/gtstalknerf:0.5
+    container_name: gtstalknerf
+    init: true
+    volumes:
+      - ./data/upstream/data:/app/core/data
+      - ./data/upstream/insightface:/root/.insightface
+      - ./data/upstream/torch-cache:/root/.cache/torch
+
+      - ./data/results:/app/core/results
+
+      - ./src:/app

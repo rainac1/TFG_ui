@@ -1,0 +1,8 @@
+# Tracker config
+
+optimize_shape: true
+optimize_jaw: true
+begin_frames: 0
+keyframes: [ 0, 1 ]
+crop_image: false
+image_size: [ 512, 512 ]
