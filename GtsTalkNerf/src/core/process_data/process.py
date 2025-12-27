@@ -14,7 +14,10 @@ from tqdm import tqdm, trange
 
 
 def myprint(s: str):
-    col = os.get_terminal_size().columns
+    try:
+        col = os.get_terminal_size().columns
+    except OSError:
+        col = 80
     print(s.center(col))
 
 

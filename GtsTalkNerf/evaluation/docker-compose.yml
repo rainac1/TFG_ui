@@ -1,0 +1,24 @@
+services:
+  video-eval:
+    image: video-eval:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.eval
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    volumes:
+      # 输入目录 (只读)
+      - ./input/generated:/input/generated:ro
+      - ./input/groundtruth:/input/groundtruth:ro
+      - ./input/audio:/input/audio:ro
+      # 输出目录 (读写)
+      - ./output:/output
+    # 默认运行评测
+    command: ["--sample_frames", "50"]

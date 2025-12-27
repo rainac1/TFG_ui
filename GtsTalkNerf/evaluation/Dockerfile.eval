@@ -1,0 +1,54 @@
+# 视频评测 Docker 镜像
+# 支持6项指标：NIQE, PSNR, SSIM, FID, LSE-C, LSE-D
+
+FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+
+LABEL maintainer="Video Evaluation System"
+LABEL description="批量视频评测工具 - 支持NIQE, PSNR, SSIM, FID, LSE-C, LSE-D"
+
+# 设置环境变量
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# 安装系统依赖
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# 创建工作目录
+WORKDIR /app
+
+# 复制依赖文件
+COPY requirements.txt /app/
+
+# 安装Python依赖
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 复制评测脚本
+COPY batch_evaluation.py /app/
+COPY entrypoint.sh /app/
+
+# 设置权限
+RUN chmod +x /app/entrypoint.sh
+
+# 创建输入输出目录
+RUN mkdir -p /input/generated /input/groundtruth /input/audio /output
+
+# 设置默认环境变量
+ENV GEN_DIR=/input/generated
+ENV GT_DIR=/input/groundtruth
+ENV AUDIO_DIR=/input/audio
+ENV OUTPUT_DIR=/output
+ENV SAMPLE_FRAMES=50
+
+# 设置入口点
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+# 默认命令
+CMD ["--help"]

@@ -80,7 +80,19 @@ COPY src/core/shencoder /app/core/shencoder
 WORKDIR /app/core/shencoder
 RUN pip install .
 
-COPY src/core /app/core
+# Backend API 
+RUN pip install fastapi pydantic uvicorn gradio dotenv zai-sdk sniffio --no-cache-dir
+
+COPY src/ /app/
+
+# 创建 GPT-SoVITS 专用环境 (Python 3.10)
+RUN conda create -n gpt-sovits python=3.10 -y
+
+# 安装 GPT-SoVITS 核心依赖
+# 使用 conda run 确保在正确环境下执行
+WORKDIR /app/GPT-SoVITS
+RUN conda run -n gpt-sovits pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cu124 && \
+    conda run -n gpt-sovits pip install --no-cache-dir -r requirements.txt
 
 WORKDIR /app
 
@@ -88,8 +100,6 @@ COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-ENTRYPOINT ["entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 RUN echo "conda activate GtsTalkNeRF" >> ~/.bashrc
-
-CMD ["sleep", "infinity"]

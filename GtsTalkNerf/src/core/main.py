@@ -179,4 +179,3 @@ if __name__ == '__main__':
         test_set.training = False
         test_set.num_rays = -1
         trainer.test(test_set.dataloader(), write_image=opt.finetune_lips)
-        

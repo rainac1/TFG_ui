@@ -1,0 +1,3 @@
+[submodule "GtsTalkNerf/GPT-SoVITS"]
+	path = GtsTalkNerf/src/GPT-SoVITS
+	url = git@github.com:RVC-Boss/GPT-SoVITS.git

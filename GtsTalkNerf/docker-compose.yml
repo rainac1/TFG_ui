@@ -1,13 +1,36 @@
 services:
-  gtstalknerf:
-    image: localhost/gtstalknerf:0.5
-    container_name: gtstalknerf
+  gtstalknerf-app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.app
+    image: gtstalknerf-app:latest
+    container_name: gtstalknerf-app
     init: true
+    ports:
+      - "7860:7860" # Frontend, which should be accessed by users
+      # - "5001:5001" # Backend
+      # - "9880:9880" # GPT-SoVITS API
     volumes:
+      # Upstream data mapping
       - ./data/upstream/data:/app/core/data
       - ./data/upstream/insightface:/root/.insightface
+
+      # Cache mapping, unless you want to redownload everything each time
       - ./data/upstream/torch-cache:/root/.cache/torch
 
-      - ./data/results:/app/core/results
+      # Checkpoints and data mapping
+      - ./data/checkpoints:/app/core/results
+      - ./data/backend_data:/app/backend/static
 
-      - ./src:/app
+      # GPT-SoVITS Models mapping
+      - ./data/gpt-sovits/pretrained_models:/app/GPT-SoVITS/GPT_SoVITS/pretrained_models
+      # Source code mapping for development (optional)
+      # - ./src:/app
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    # The entrypoint script in the image will handle the startup sequence automatically
